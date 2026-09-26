@@ -1,0 +1,242 @@
+### FixIt Backend API — Manual Test Requests
+### Open this file with the VS Code "REST Client" extension and click
+### "Send Request" above each block, top to bottom (some requests depend
+### on tokens/IDs captured from earlier ones via REST Client's variables).
+
+@baseUrl = http://localhost:5000/api
+
+### 1. Register a new customer
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Test Customer",
+  "email": "customer@example.com",
+  "password": "Test@123456",
+  "role": "customer"
+}
+
+### 2. Register a new professional
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "John Electrician",
+  "email": "pro@example.com",
+  "password": "Test@123456",
+  "role": "professional"
+}
+
+### 3. Attempt to register as admin (should be blocked / downgraded — never actually admin)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Security Test User",
+  "email": "securitytest@example.com",
+  "password": "Test@123456",
+  "role": "admin"
+}
+
+### 4. Login as the customer (captures token for later requests)
+# @name customerLogin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "customer@example.com",
+  "password": "Test@123456"
+}
+
+### 5. Login as the professional (captures token for later requests)
+# @name proLogin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "pro@example.com",
+  "password": "Test@123456"
+}
+
+### 6. Login with wrong password (should be 401)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "customer@example.com",
+  "password": "wrongpassword"
+}
+
+### 7. Get all professionals — public, no token needed
+GET {{baseUrl}}/professionals
+
+### 8. Try creating a professional listing with NO token (should be 401)
+POST {{baseUrl}}/professionals
+Content-Type: application/json
+
+{
+  "name": "No Auth Test",
+  "service": "Electrical",
+  "description": "Should be rejected",
+  "location": "Bengaluru",
+  "price": 500
+}
+
+### 9. Try creating a professional listing as a CUSTOMER (should be 403 — wrong role)
+POST {{baseUrl}}/professionals
+Authorization: Bearer {{customerLogin.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "name": "Customer Trying To Create",
+  "service": "Electrical",
+  "description": "Should be rejected — customers can't create listings",
+  "location": "Bengaluru",
+  "price": 500
+}
+
+### 10. Create a professional listing as the PROFESSIONAL (should succeed — 201)
+# @name createProfessional
+POST {{baseUrl}}/professionals
+Authorization: Bearer {{proLogin.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "name": "John Electrician",
+  "service": "Electrical",
+  "description": "Experienced electrician for home electrical repairs",
+  "location": "Bengaluru",
+  "rating": 4.5,
+  "price": 500,
+  "availability": true
+}
+
+### 11. Get the newly created professional by ID
+GET {{baseUrl}}/professionals/{{createProfessional.response.body.$.professional._id}}
+
+### 12. Update the listing as its OWNER (should succeed)
+PUT {{baseUrl}}/professionals/{{createProfessional.response.body.$.professional._id}}
+Authorization: Bearer {{proLogin.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "price": 600,
+  "availability": false
+}
+
+### 13. Register + log in a SECOND professional, to test ownership enforcement
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Second Professional",
+  "email": "pro2@example.com",
+  "password": "Test@123456",
+  "role": "professional"
+}
+
+### 14. Log in as the second professional
+# @name proLogin2
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "pro2@example.com",
+  "password": "Test@123456"
+}
+
+### 15. Second professional tries to update the FIRST professional's listing (should be 403)
+PUT {{baseUrl}}/professionals/{{createProfessional.response.body.$.professional._id}}
+Authorization: Bearer {{proLogin2.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "price": 1
+}
+
+### 16. Create a booking as the customer, against the professional's listing
+# @name createBooking
+POST {{baseUrl}}/bookings
+Authorization: Bearer {{customerLogin.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "professional": "{{createProfessional.response.body.$.professional._id}}",
+  "service": "Electrical",
+  "date": "2026-10-05",
+  "time": "11:00 AM",
+  "status": "pending"
+}
+
+### 17. Get all bookings for the logged-in customer
+GET {{baseUrl}}/bookings
+Authorization: Bearer {{customerLogin.response.body.$.token}}
+
+### 18. Get one booking by ID
+GET {{baseUrl}}/bookings/{{createBooking.response.body.$.booking._id}}
+Authorization: Bearer {{customerLogin.response.body.$.token}}
+
+### 19. Update the booking (owner)
+PUT {{baseUrl}}/bookings/{{createBooking.response.body.$.booking._id}}
+Authorization: Bearer {{customerLogin.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "status": "confirmed"
+}
+
+### 20. Second professional tries to view the booking (should be 404 — hidden, not theirs)
+GET {{baseUrl}}/bookings/{{createBooking.response.body.$.booking._id}}
+Authorization: Bearer {{proLogin2.response.body.$.token}}
+
+### 21. Try getting bookings with NO token (should be 401)
+GET {{baseUrl}}/bookings
+
+### 22. Registration validation — invalid email, short password (should be 400)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "A",
+  "email": "not-an-email",
+  "password": "123"
+}
+
+### 23. Professional validation — missing/invalid fields (should be 400)
+POST {{baseUrl}}/professionals
+Authorization: Bearer {{proLogin.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "name": "",
+  "service": "",
+  "description": "",
+  "location": "",
+  "price": -100,
+  "rating": 8,
+  "availability": "maybe"
+}
+
+### 24. Booking validation — invalid ID and bad status (should be 400)
+POST {{baseUrl}}/bookings
+Authorization: Bearer {{customerLogin.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "professional": "invalid-id",
+  "service": "",
+  "date": "",
+  "time": "",
+  "status": "wrong-status"
+}
+
+### 25. Invalid MongoDB ID format on professional lookup (should be 400)
+GET {{baseUrl}}/professionals/invalid-id
+
+### 26. Delete the booking (owner cleans up after testing)
+DELETE {{baseUrl}}/bookings/{{createBooking.response.body.$.booking._id}}
+Authorization: Bearer {{customerLogin.response.body.$.token}}
+
+### 27. Delete the professional listing (owner cleans up after testing)
+DELETE {{baseUrl}}/professionals/{{createProfessional.response.body.$.professional._id}}
+Authorization: Bearer {{proLogin.response.body.$.token}}
