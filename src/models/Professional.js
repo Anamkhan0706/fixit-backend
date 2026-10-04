@@ -32,6 +32,12 @@ const professionalSchema = new mongoose.Schema(
       trim: true,
     },
 
+    experience: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+
     rating: {
       type: Number,
       default: 0,
@@ -50,9 +56,10 @@ const professionalSchema = new mongoose.Schema(
       default: true,
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-module.exports = mongoose.model("Professional", professionalSchema);
+module.exports = mongoose.model(
+  "Professional",
+  professionalSchema
+);

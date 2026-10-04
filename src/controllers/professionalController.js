@@ -29,6 +29,7 @@ const getProfessionalById = async (req, res) => {
         message: "Invalid professional ID",
       });
     }
+
     const professional = await Professional.findById(req.params.id);
 
     if (!professional) {
@@ -59,15 +60,24 @@ const createProfessional = async (req, res) => {
       service,
       description,
       location,
+      experience,
       rating,
       price,
       availability,
     } = req.body;
 
-    if (!name || !service || !description || !location || price === undefined) {
+    if (
+      !name ||
+      !service ||
+      !description ||
+      !location ||
+      experience === undefined ||
+      price === undefined
+    ) {
       return res.status(400).json({
         success: false,
-        message: "Name, service, description, location, and price are required",
+        message:
+          "Name, service, description, location, experience, and price are required",
       });
     }
 
@@ -77,6 +87,7 @@ const createProfessional = async (req, res) => {
       service,
       description,
       location,
+      experience,
       rating,
       price,
       availability,
@@ -115,21 +126,27 @@ const updateProfessional = async (req, res) => {
       });
     }
 
-    const isOwner = existing.user.toString() === req.user.userId;
+    const isOwner =
+      existing.user.toString() === req.user.userId;
     const isAdmin = req.user.role === "admin";
 
     if (!isOwner && !isAdmin) {
       return res.status(403).json({
         success: false,
-        message: "You do not have permission to update this listing",
+        message:
+          "You do not have permission to update this listing",
       });
     }
 
-    const professional = await Professional.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
+    const professional =
+      await Professional.findByIdAndUpdate(
+        req.params.id,
+        req.body,
+        {
+          new: true,
+          runValidators: true,
+        }
+      );
 
     res.status(200).json({
       success: true,
@@ -155,7 +172,9 @@ const deleteProfessional = async (req, res) => {
       });
     }
 
-    const existing = await Professional.findById(req.params.id);
+    const existing = await Professional.findById(
+      req.params.id
+    );
 
     if (!existing) {
       return res.status(404).json({
@@ -164,13 +183,15 @@ const deleteProfessional = async (req, res) => {
       });
     }
 
-    const isOwner = existing.user.toString() === req.user.userId;
+    const isOwner =
+      existing.user.toString() === req.user.userId;
     const isAdmin = req.user.role === "admin";
 
     if (!isOwner && !isAdmin) {
       return res.status(403).json({
         success: false,
-        message: "You do not have permission to delete this listing",
+        message:
+          "You do not have permission to delete this listing",
       });
     }
 

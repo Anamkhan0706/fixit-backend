@@ -38,7 +38,9 @@ const registerValidation = [
   body("role")
     .optional()
     .isIn(["customer", "professional"])
-    .withMessage("Role must be either customer or professional"),
+    .withMessage(
+      "Role must be either customer or professional"
+    ),
 ];
 
 const loginValidation = [
@@ -53,6 +55,7 @@ const loginValidation = [
     .notEmpty()
     .withMessage("Password is required"),
 ];
+
 const professionalValidation = [
   body("name")
     .trim()
@@ -74,22 +77,37 @@ const professionalValidation = [
     .notEmpty()
     .withMessage("Location is required"),
 
+  body("experience")
+    .notEmpty()
+    .withMessage("Experience is required")
+    .isInt({ min: 0 })
+    .withMessage(
+      "Experience must be a non-negative whole number"
+    ),
+
   body("price")
     .notEmpty()
     .withMessage("Price is required")
     .isFloat({ min: 0 })
-    .withMessage("Price must be a non-negative number"),
+    .withMessage(
+      "Price must be a non-negative number"
+    ),
 
   body("rating")
     .optional()
     .isFloat({ min: 0, max: 5 })
-    .withMessage("Rating must be between 0 and 5"),
+    .withMessage(
+      "Rating must be between 0 and 5"
+    ),
 
   body("availability")
     .optional()
     .isBoolean()
-    .withMessage("Availability must be true or false"),
+    .withMessage(
+      "Availability must be true or false"
+    ),
 ];
+
 const professionalUpdateValidation = [
   body("name")
     .optional()
@@ -115,20 +133,33 @@ const professionalUpdateValidation = [
     .notEmpty()
     .withMessage("Location cannot be empty"),
 
+  body("experience")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage(
+      "Experience must be a non-negative whole number"
+    ),
+
   body("price")
     .optional()
     .isFloat({ min: 0 })
-    .withMessage("Price must be a non-negative number"),
+    .withMessage(
+      "Price must be a non-negative number"
+    ),
 
   body("rating")
     .optional()
     .isFloat({ min: 0, max: 5 })
-    .withMessage("Rating must be between 0 and 5"),
+    .withMessage(
+      "Rating must be between 0 and 5"
+    ),
 
   body("availability")
     .optional()
     .isBoolean()
-    .withMessage("Availability must be true or false"),
+    .withMessage(
+      "Availability must be true or false"
+    ),
 ];
 
 const bookingValidation = [
@@ -136,7 +167,9 @@ const bookingValidation = [
     .notEmpty()
     .withMessage("Professional ID is required")
     .isMongoId()
-    .withMessage("Professional ID must be valid"),
+    .withMessage(
+      "Professional ID must be valid"
+    ),
 
   body("service")
     .trim()
@@ -155,40 +188,88 @@ const bookingValidation = [
 
   body("status")
     .optional()
-    .isIn(["pending", "confirmed", "completed", "cancelled"])
+    .isIn([
+      "pending",
+      "confirmed",
+      "completed",
+      "cancelled",
+    ])
     .withMessage(
       "Status must be pending, confirmed, completed, or cancelled"
     ),
 ];
+
 const bookingUpdateValidation = [
   body("professional")
     .optional()
     .isMongoId()
-    .withMessage("Professional ID must be valid"),
+    .withMessage(
+      "Professional ID must be valid"
+    ),
 
   body("service")
     .optional()
     .trim()
     .notEmpty()
-    .withMessage("Service cannot be empty"),
+    .withMessage(
+      "Service cannot be empty"
+    ),
 
   body("date")
     .optional()
     .trim()
     .notEmpty()
-    .withMessage("Date cannot be empty"),
+    .withMessage(
+      "Date cannot be empty"
+    ),
 
   body("time")
     .optional()
     .trim()
     .notEmpty()
-    .withMessage("Time cannot be empty"),
+    .withMessage(
+      "Time cannot be empty"
+    ),
 
   body("status")
     .optional()
-    .isIn(["pending", "confirmed", "completed", "cancelled"])
+    .isIn([
+      "pending",
+      "confirmed",
+      "completed",
+      "cancelled",
+    ])
     .withMessage(
       "Status must be pending, confirmed, completed, or cancelled"
+    ),
+];
+
+/*
+  Review validation
+*/
+
+const reviewValidation = [
+  body("booking")
+    .notEmpty()
+    .withMessage("Booking ID is required")
+    .isMongoId()
+    .withMessage("Booking ID must be valid"),
+
+  body("rating")
+    .notEmpty()
+    .withMessage("Rating is required")
+    .isInt({ min: 1, max: 5 })
+    .withMessage(
+      "Rating must be between 1 and 5"
+    ),
+
+  body("comment")
+    .trim()
+    .notEmpty()
+    .withMessage("Review comment is required")
+    .isLength({ min: 2, max: 500 })
+    .withMessage(
+      "Review comment must be between 2 and 500 characters"
     ),
 ];
 
@@ -200,4 +281,5 @@ module.exports = {
   professionalUpdateValidation,
   bookingValidation,
   bookingUpdateValidation,
+  reviewValidation,
 };
